@@ -119,6 +119,23 @@
                   server
                   {:transport #'transport/bencode})))))
 
+(deftest ^:slow switch-ns
+  (with-open [server (server/start-server :port 5000)
+              conn (nrepl/connect :port 5000)]
+    (let [client (nrepl/client conn 1000)]
+      (is (= "test-ns"
+             (-> (nrepl/message client {:op "eval"
+                                        :code "(ns test-ns)"})
+                 first
+                 nrepl/read-response-value
+                 :ns)))
+      (is (= :test-ns/a
+             (-> (nrepl/message client {:op "eval"
+                                        :code "::a"})
+                 first
+                 nrepl/read-response-value
+                 :value))))))
+
 (deftest ^:slow ack
   (let [ack-port (:port *server*)
         server-process (apply sh ["java" "-Dnreplacktest=y"
